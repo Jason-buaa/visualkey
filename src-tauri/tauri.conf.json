@@ -13,9 +13,15 @@
     "windows": [
       {
         "title": "visualkey",
+        "label": "main",
+        "visible": false,
         "width": 800,
         "height": 600
-      }
+      },
+      {
+        "label": "splashscreen",
+        "url": "/splashscreen"
+    }
     ],
     "security": {
       "csp": null
