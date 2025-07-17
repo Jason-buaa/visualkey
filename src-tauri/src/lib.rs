@@ -33,12 +33,19 @@ async fn set_complete(
         _ => panic!("invalid task completed!"),
     }
     // 检查两个任务是否都已完成
+    println!("===> backend={} frontend={}", state_lock.backend_task, state_lock.frontend_task);
     if state_lock.backend_task && state_lock.frontend_task {
-        // 设置都已完成，我们可以关闭启动画面并且显示 main 窗口了
-        let splash_window = app.get_webview_window("splashscreen").unwrap();
-        let main_window = app.get_webview_window("main").unwrap();
-        splash_window.close().unwrap();
-        main_window.show().unwrap();
+        if let Some(splash) = app.get_webview_window("splashscreen") {
+            let _ = splash.close();
+        } else {
+            println!("❌ 找不到 splashscreen 窗口！");
+        }
+    
+        if let Some(main) = app.get_webview_window("main") {
+            let _ = main.show();
+        } else {
+            println!("❌ 找不到 main 窗口！");
+        }
     }
     Ok(())
 }
