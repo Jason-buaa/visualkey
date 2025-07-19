@@ -3,27 +3,34 @@ import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { onMounted } from 'vue';
+import { onBeforeUnmount  } from 'vue';
 const greetMsg = ref("");
 const name = ref("");
+const x = ref('-');
+const y = ref('-');
 
+let unlisten = null;
 async function greet() {
   // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
   greetMsg.value = await invoke("greet", { name: name.value });
 }
-onMounted(() => {
+onMounted(async () => {
+  await invoke("start_mouse_listener");
   invoke('set_complete', { task: 'frontend' });
+  unlisten = await listen('mouse-move', event => {
+    const [mouseX, mouseY] = event.payload;
+    x.value = mouseX;
+    y.value = mouseY;
+  });
 });
 
-async function initMouseTracking() {
-  await invoke("start_mouse_listener");
+onBeforeUnmount(() => {
+  // 组件销毁时取消监听，防止内存泄漏
+  if (unlisten) {
+    unlisten();
+  }
+});
 
-  listen<[number, number]>("mouse-move", (event) => {
-    const [x, y] = event.payload;
-    console.log(`🖱 鼠标位置: (${x}, ${y})`);
-  });
-}
-
-initMouseTracking();
 
 </script>
 
@@ -49,6 +56,9 @@ initMouseTracking();
       <button type="submit">Greet</button>
     </form>
     <p>{{ greetMsg }}</p>
+    <div class="mouse-position">
+    Mouse Position: (x: {{ x }}, y: {{ y }})
+  </div>
   </main>
 </template>
 
