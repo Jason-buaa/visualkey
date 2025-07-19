@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { onMounted } from 'vue';
 const greetMsg = ref("");
 const name = ref("");
@@ -12,6 +13,18 @@ async function greet() {
 onMounted(() => {
   invoke('set_complete', { task: 'frontend' });
 });
+
+async function initMouseTracking() {
+  await invoke("start_mouse_listener");
+
+  listen<[number, number]>("mouse-move", (event) => {
+    const [x, y] = event.payload;
+    console.log(`🖱 鼠标位置: (${x}, ${y})`);
+  });
+}
+
+initMouseTracking();
+
 </script>
 
 <template>
