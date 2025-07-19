@@ -8,20 +8,32 @@ const greetMsg = ref("");
 const name = ref("");
 const x = ref('-');
 const y = ref('-');
-
+const keyPressed = ref('');
 let unlisten = null;
+let unlistenKey = null;
 async function greet() {
   // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
   greetMsg.value = await invoke("greet", { name: name.value });
 }
+
+
+const handleFrontendKeydown = (e: KeyboardEvent) => {
+  keyPressed.value = e.key; // 或 e.code / e.keyCode 根据你想要的显示方式
+};
+
 onMounted(async () => {
-  await invoke("start_mouse_listener");
+  await invoke("start_input_listener");
   invoke('set_complete', { task: 'frontend' });
   unlisten = await listen('mouse-move', event => {
     const [mouseX, mouseY] = event.payload;
     x.value = mouseX;
     y.value = mouseY;
   });
+  unlistenKey = await listen('key-press', event => {
+    keyPressed.value = event.payload || '';
+  });
+  // 前端键盘事件监听（浏览器内，输入框也能触发）
+  window.addEventListener("keydown", handleFrontendKeydown, true); // 第三个参数为 true 捕获阶段
 });
 
 onBeforeUnmount(() => {
@@ -29,6 +41,8 @@ onBeforeUnmount(() => {
   if (unlisten) {
     unlisten();
   }
+  if (unlistenKey) unlistenKey();
+  window.removeEventListener("keydown", handleFrontendKeydown, true);
 });
 
 
@@ -59,6 +73,13 @@ onBeforeUnmount(() => {
     <div class="mouse-position">
     Mouse Position: (x: {{ x }}, y: {{ y }})
   </div>
+  <input
+      type="text"
+      readonly
+      :value="keyPressed"
+      placeholder="当前按下的键盘按键"
+      class="key-input"
+    />
   </main>
 </template>
 
@@ -114,6 +135,7 @@ onBeforeUnmount(() => {
   justify-content: center;
 }
 
+
 a {
   font-weight: 500;
   color: #646cff;
@@ -163,6 +185,12 @@ button {
   margin-right: 5px;
 }
 
+.key-input {
+  width: 100%;
+  padding: 6px;
+  font-family: monospace;
+  font-size: 1rem;
+}
 @media (prefers-color-scheme: dark) {
   :root {
     color: #f6f6f6;

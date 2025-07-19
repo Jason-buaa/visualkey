@@ -51,12 +51,21 @@ async fn set_complete(
 }
 
 #[tauri::command]
-fn start_mouse_listener(app: AppHandle) -> Result<(), String> {
+fn start_input_listener(app: AppHandle) -> Result<(), String> {
     thread::spawn(move || {
         if let Err(e) = listen(move |event| {
-            if let EventType::MouseMove { x, y } = event.event_type {
-                let _ = app.emit("mouse-move", (x as i32, y as i32));
+            match event.event_type {
+                EventType::MouseMove { x, y } => {
+                    let _ = app.emit("mouse-move", (x as i32, y as i32));
+                }
+                EventType::KeyPress(key) => {
+                    let key_str = format!("{:?}", key);
+                    println!("🔑 key pressed: {}", key_str); // ✅ 添加这行
+                    let _ = app.emit("key-press", key_str);
+                }
+                _ => {}
             }
+            // ✅ 只返回 unit 类型，不是 Result
         }) {
             eprintln!("监听失败: {:?}", e);
         }
@@ -91,7 +100,7 @@ fn main() {
             backend_task: false,
         }))
         // 添加我们用于检查的命令
-        .invoke_handler(tauri::generate_handler![greet, set_complete,start_mouse_listener])
+        .invoke_handler(tauri::generate_handler![greet, set_complete,start_input_listener])
         // 使用 setup 钩子来执行设置相关任务
         // 在主循环之前运行，因此尚未创建窗口
         .setup(|app| {
